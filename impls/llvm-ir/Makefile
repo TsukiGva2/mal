@@ -14,4 +14,5 @@ all: $(COMPONENTS) $(STEPS)
 
 .PHONY: clean
 clean:
+	rm -f $(COMPONENTS)
 	rm -f $(STEPS) $(STEPS:%=%.o)

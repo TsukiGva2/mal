@@ -39,6 +39,9 @@ define i32 @main() {
 
   %stdout = load %FILE*, %FILE** @stdout
 
+  br label %loop
+
+loop:
   call i32
     @fputs(
       i8* getelementptr (
@@ -51,14 +54,22 @@ define i32 @main() {
   )
 
   %line = call i8*
-    @Readline()
+    @Readline() ; This doesnt actually allocate new memory (see readline.ll)
 
+  ; check for EOF
+  %isEOF = icmp eq i8* %line, null
+  br i1 %isEOF, label %EOF, label %ok
+
+ok:
   %result = call i8*
     @Rep(i8* %line)
 
   call i32
     @puts(i8* %result)
 
+  br label %loop
+
+EOF:
   call void
     @Freeline(i8* %line)
 

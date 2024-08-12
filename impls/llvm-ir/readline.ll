@@ -9,7 +9,7 @@
 
 @BUFSIZE = private constant i64 255
 
-@CURRENT_BUFFER = private global i8* null
+@BUFFER = private global i8* null
 
 define i8* @NewBuffer() {
 
@@ -23,7 +23,7 @@ define i8* @NewBuffer() {
 
 define i8* @Readline() {
 
-  %global_buf = load i8*, i8** @CURRENT_BUFFER
+  %global_buf = load i8*, i8** @BUFFER
 
   %isNull = icmp eq i8* %global_buf, null
 
@@ -36,6 +36,10 @@ alloc:
     @NewBuffer()
 
   store i8* %1, i8** %WhichBuf
+
+  ; setting @BUFFER to newly allocated buf for
+  ; reutilization
+  store i8* %1, i8** @BUFFER
 
   br label %continue
 
@@ -50,14 +54,15 @@ continue:
   %stdin = load %struct._IO_FILE*, %struct._IO_FILE** @stdin
   %size = load i64, i64* @BUFSIZE
 
-  call i8*
+  %result = call i8*
     @fgets(
       i8* %buf,
       i64 %size,
       %struct._IO_FILE* %stdin
   )
 
-  ret i8* %buf
+  ; returns %buf or NULL in case of EOF or error
+  ret i8* %result
 }
 
 define void @Freeline(i8* %line) {
