@@ -1,9 +1,6 @@
-%struct._IO_FILE = type opaque
-%struct._IO_marker = type opaque
-%struct._IO_codecvt = type opaque
-%struct._IO_wide_data = type opaque
+%FILE = type opaque
 
-@stdin = external global %struct._IO_FILE*
+@stdin = external global %FILE*
 
 ; end definition
 
@@ -51,14 +48,14 @@ noalloc:
 continue:
   %buf = load i8*, i8** %WhichBuf
 
-  %stdin = load %struct._IO_FILE*, %struct._IO_FILE** @stdin
+  %stdin = load %FILE*, %FILE** @stdin
   %size = load i64, i64* @BUFSIZE
 
   %result = call i8*
     @fgets(
       i8* %buf,
       i64 %size,
-      %struct._IO_FILE* %stdin
+      %FILE* %stdin
   )
 
   ; returns %buf or NULL in case of EOF or error
@@ -73,7 +70,7 @@ define void @Freeline(i8* %line) {
   ret void
 }
 
-declare i8* @fgets(i8*, i64, %struct._IO_FILE*)
+declare i8* @fgets(i8*, i64, %FILE*)
 
 declare i8*  @AllocI8(i64)
 declare void @FreeI8(i8*)
