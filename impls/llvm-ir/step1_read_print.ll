@@ -11,7 +11,7 @@ target triple = "x86_64-pc-linux-gnu"
 @RE = constant [74 x i8] c"[\5Cs,]*(~@|[\5C[\5C]{}()'`~^@]|\5C\22(?:\5C\5C.|[^\5C\5C\5C\22])*\5C\22?|;.*|[^\5Cs\5C[\5C]{}('\5C\22`,;)]*)\00"
 
 define i8* @READ(i8* %line) {
-
+  
   ret i8* %line
 }
 
@@ -79,7 +79,10 @@ ok:
     @Rep(i8* %line)
 
   call i32
-    @puts(i8* %result)
+    @fputs(
+      i8* %result,
+      %FILE* %stdout
+    )
 
   br label %loop
 
@@ -93,7 +96,8 @@ EOF:
   ret i32 0
 }
 
-declare i32 @puts(i8*)
+;declare i32 @printf(i8*, ...)
+;declare i32 @puts(i8*)
 declare i32 @fputs(i8*, %FILE*) ; no newline
 
 declare i8*  @Readline()
@@ -101,4 +105,10 @@ declare void @Freeline(i8*)
 
 declare %pcre* @Regex(i8*)
 declare void   @FreeRegex()
+
+declare void @LL.Init()
+declare i8*  @LL.Next()
+declare i8*  @LL.Peek()
+declare void @LL.Clear()
+declare void @LL.Insert(i8*)
 
