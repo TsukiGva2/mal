@@ -44,7 +44,7 @@ define i32 @main() {
   %stdout = load %FILE*, %FILE** @stdout
 
   %re = call %pcre*
-    @Regex(
+    @Regex.Init(
       i8* getelementptr (
         [74 x i8],
         [74 x i8]* @RE,
@@ -88,7 +88,7 @@ ok:
 
 EOF:
   call void
-    @FreeRegex()
+    @Regex.Clean()
 
   call void
     @Freeline(i8* %line)
@@ -98,17 +98,17 @@ EOF:
 
 ;declare i32 @printf(i8*, ...)
 ;declare i32 @puts(i8*)
-declare i32 @fputs(i8*, %FILE*) ; no newline
+declare i32    @fputs(i8*, %FILE*) ; no newline
 
-declare i8*  @Readline()
-declare void @Freeline(i8*)
+declare i8*    @Readline()
+declare void   @Freeline(i8*)
 
-declare %pcre* @Regex(i8*)
-declare void   @FreeRegex()
+declare %pcre* @Regex.Init(i8*)
+declare void   @Regex.Clean()
 
-declare void @LL.Init()
-declare i8*  @LL.Next()
-declare i8*  @LL.Peek()
-declare void @LL.Clear()
-declare void @LL.Insert(i8*)
+declare void   @LL.Init()
+declare i8*    @LL.Next()
+declare i8*    @LL.Peek()
+declare void   @LL.Clear()
+declare void   @LL.Insert(i8*)
 
