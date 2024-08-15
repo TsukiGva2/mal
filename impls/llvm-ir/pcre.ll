@@ -6,9 +6,42 @@
 @Error        = global i8* null
 @Error.offset = global i32 0
 
-@Pattern = global %pcre* null
+@Pattern      = global %pcre* null
+@Regex.Groups = global [255 x i32] zeroinitializer
 
-define %pcre* @Regex.Init(i8* %pattern) {
+define void @Regex.Err() noreturn {
+  ; Reporting the pcre error
+
+  %1 = load i32, i32* @Error.offset
+  %2 = load i8*, i8** @Error
+
+  ; "error at {@Error.offset}: {@Error}\n"
+  call i32 (i8*, ...)
+    @printf(
+      i8* getelementptr (
+        [17 x i8],
+        [17 x i8]* @PCRE_ERR_FMT,
+        i64 0,
+        i64 0
+      ),
+      i32 %1,
+      i8* %2
+  )
+
+  ; die with message: "PCRE Creation err"
+  call void
+    @Die(i8* getelementptr (
+      [18 x i8],
+      [18 x i8]* @PCRE_ERR,
+      i64 0,
+      i64 0
+    )
+  ) noreturn
+
+  unreachable
+}
+
+define void @Regex.Init(i8* %pattern) {
 
   ; Compiles the given %pattern and
   ; deals with errors accordingly
@@ -41,35 +74,10 @@ validate:
   br i1 %isNullOrError, label %die, label %ok
 
 die:
-  ; Reporting the pcre error
+  ; simply die with a msg
 
-  %1 = load i32, i32* @Error.offset
-
-  ; yes i know it's already loaded, just being consistent
-  %2 = load i8*, i8** @Error
-
-  ; "error at {@Error.offset}: {@Error}\n"
-  call i32 (i8*, ...)
-    @printf(
-      i8* getelementptr (
-        [17 x i8],
-        [17 x i8]* @PCRE_ERR_FMT,
-        i64 0,
-        i64 0
-      ),
-      i32 %1,
-      i8* %2
-  )
-
-  ; die with message: "PCRE Creation err"
   call void
-    @Die(i8* getelementptr (
-      [18 x i8],
-      [18 x i8]* @PCRE_ERR,
-      i64 0,
-      i64 0
-    )
-  ) noreturn
+    @Regex.Err() noreturn
 
   unreachable
 
@@ -78,8 +86,74 @@ ok:
 
   store %pcre* %re, %pcre** @Pattern
 
-  ret %pcre* %re
+  ; It's just an object
+  ret void
 }
+
+define void @Regex.CheckReturnCode(i32 %returnCode) {
+
+  %isPcreError = icmp ne i32 %returnCode, -1 ; NOMATCH
+  br i1 %isPcreError, label %err, label %ok
+
+err:
+  ; die if actual regex error
+
+  call void
+    @Regex.Err() noreturn
+
+  unreachable
+
+ok:
+  ; don't report if it just didn't match
+
+  ret void
+}
+
+define void @Regex.Match(i8* %str) {
+
+  %length = call i32
+    @strlen(i8* %str)
+
+  %pattern = load %pcre*, %pcre** @Pattern
+
+  %1 = call i32
+    @pcre_exec(
+      %pcre* %pattern,
+      i8* null,
+      i8* %str,
+      i32 %length,
+      i32 0,
+      i32 0,
+
+      ; Array of substring indexes
+      getelementptr (
+        [255 x i32],
+        [255 x i32]* @Regex.Groups,
+        i64 0,
+        i64 0
+      ),
+
+      ; size of the array
+      i32 255,
+  )
+
+  ; %1 >= 0?
+  %didMatch = icmp sge i32 %1, 0
+  br i1 %didMatch, label %match, label %err
+
+match:
+  br label %done
+
+err:
+  call void
+    @Regex.CheckReturnCode(i32 %1)
+
+  br label %done
+
+done:
+  ret void
+}
+
 
 define void @Regex.Clean() {
 
@@ -136,8 +210,11 @@ define void @Pattern.Destruct() {
   ret void
 }
 
+declare i32    @printf(i8*, ...)
+declare i32    @strlen(i8*)
+
+declare %pcre* @pcre_compile(i8*, i32, i8**, i32*, i8*)
+declare i32    @pcre_exec(%pcre*, i8*, i8*, i32, i32, i32, i8**, i32)
 ;declare void  @pcre_free(%pcre*)
 
-declare i32    @printf(i8*, ...)
-declare %pcre* @pcre_compile(i8*,i32,i8**,i32*,i8*)
 declare void   @Die(i8*) noreturn

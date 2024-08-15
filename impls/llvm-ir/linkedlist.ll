@@ -168,7 +168,7 @@ define void @LL.Insert(i8* %newData) {
   ret void
 }
 
-define void @LL.Clear() {
+define void @LL.Clean() {
 
   ; TODO: document this
 

@@ -1,14 +1,10 @@
 target triple = "x86_64-pc-linux-gnu"
 
-%pcre = type opaque
-
 %FILE = type opaque
+
 @stdout = external global %FILE*
 
 @Greeting = constant [7 x i8] c"user> \00"
-
-; escaped stuff \5C -> \ and \22 -> "
-@RE = constant [74 x i8] c"[\5Cs,]*(~@|[\5C[\5C]{}()'`~^@]|\5C\22(?:\5C\5C.|[^\5C\5C\5C\22])*\5C\22?|;.*|[^\5Cs\5C[\5C]{}('\5C\22`,;)]*)\00"
 
 define i8* @READ(i8* %line) {
   
@@ -41,17 +37,7 @@ define i8* @Rep(i8* %line) {
 
 define i32 @main() {
 
-  %stdout = load %FILE*, %FILE** @stdout
-
-  %re = call %pcre*
-    @Regex.Init(
-      i8* getelementptr (
-        [74 x i8],
-        [74 x i8]* @RE,
-        i64 0,
-        i64 0
-      )
-  )
+  ; TODO: Start Reader
 
   br label %loop
 
@@ -67,8 +53,9 @@ loop:
       %FILE* %stdout
   )
 
+ ; This doesnt actually allocate new memory (see readline.ll)
   %line = call i8*
-    @Readline() ; This doesnt actually allocate new memory (see readline.ll)
+    @Readline()
 
   ; check for EOF
   %isEOF = icmp eq i8* %line, null
@@ -87,8 +74,7 @@ ok:
   br label %loop
 
 EOF:
-  call void
-    @Regex.Clean()
+  ; TODO: Clean Reader
 
   call void
     @Freeline(i8* %line)
@@ -102,13 +88,4 @@ declare i32    @fputs(i8*, %FILE*) ; no newline
 
 declare i8*    @Readline()
 declare void   @Freeline(i8*)
-
-declare %pcre* @Regex.Init(i8*)
-declare void   @Regex.Clean()
-
-declare void   @LL.Init()
-declare i8*    @LL.Next()
-declare i8*    @LL.Peek()
-declare void   @LL.Clear()
-declare void   @LL.Insert(i8*)
 
