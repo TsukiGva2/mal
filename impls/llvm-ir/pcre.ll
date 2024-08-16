@@ -111,65 +111,6 @@ ok:
   ret void
 }
 
-;--DEBUG--
-;; Lengthy function for debugging
-;@PCRE_DBG_FMT = constant [26 x i8] c"Group: %d, Bounds: %d-%d\0A\00"
-;define void @Regex.Inspect() {
-;  %pf1 = getelementptr
-;    [10 x i32],
-;    [10 x i32]* @Regex.Groups,
-;    i64 0,
-;    i64 0
-;  %pf2 = getelementptr
-;    [10 x i32],
-;    [10 x i32]* @Regex.Groups,
-;    i64 0,
-;    i64 1
-;  %ps1 = getelementptr
-;    [10 x i32],
-;    [10 x i32]* @Regex.Groups,
-;    i64 0,
-;    i64 2
-;  %ps2 = getelementptr
-;    [10 x i32],
-;    [10 x i32]* @Regex.Groups,
-;    i64 0,
-;    i64 3
-
-;  %f1 = load i32, i32* %pf1
-;  %f2 = load i32, i32* %pf2
-;  %s1 = load i32, i32* %ps1
-;  %s2 = load i32, i32* %ps2
-
-;  call i32 (i8*, ...)
-;    @printf(
-;      i8* getelementptr (
-;        [26 x i8],
-;        [26 x i8]* @PCRE_DBG_FMT,
-;        i64 0,
-;        i64 0
-;      ),
-;      i32 1,
-;      i32 %f1,
-;      i32 %f2
-;  )
-;  call i32 (i8*, ...)
-;    @printf(
-;      i8* getelementptr (
-;        [26 x i8],
-;        [26 x i8]* @PCRE_DBG_FMT,
-;        i64 0,
-;        i64 0
-;      ),
-;      i32 2,
-;      i32 %s1,
-;      i32 %s2
-;  )
-
-;  ret void
-;}
-;--END--
-
 ; Returns the result of pcre_exec
 ; i.e. the number of groups
 define i32 @Regex.Match(i8* %str) {

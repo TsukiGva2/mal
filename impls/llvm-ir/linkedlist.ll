@@ -209,6 +209,10 @@ check:
 
 done:
 
+  ; setting Head next to null pointer so we don't double free
+  %Head.Next = getelementptr %LL, %LL* @LL.Head, i32 0, i32 1
+  store %LL* null, %LL** %Head.Next
+
   ; reset positions
   call void
     @LL.Init()

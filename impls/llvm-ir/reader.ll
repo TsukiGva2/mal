@@ -13,7 +13,7 @@
 
 ; this array is just for allocation purposes
 ; the tokens in it are accessed via LL.Next/LL.Peek
-@Tokens = global [80 x %Token] zeroinitializer
+@Reader.Tokens = global [80 x %Token] zeroinitializer
 @Length = global i8 0
 
 %pcre = type opaque
@@ -72,26 +72,26 @@ create:
   br label %getElement
   
 getElement:
-  ;%len = load i8, i8* @Length
-  %offset = zext i8 %len to i64
+  ; %len = load i8, i8* @Length
+  ; %offset = zext i8 %len to i64
 
   %target = getelementptr
     [80 x %Token],
-    [80 x %Token]* @Tokens,
-    i64 0,
-    i64 %offset
+    [80 x %Token]* @Reader.Tokens,
+    i8 0,
+    i8 %len
 
   %target.lexeme = getelementptr
     %Token,
     %Token* %target,
     i32 0,
-    i32 0  ; lexeme
+    i32 0        ; lexeme
 
   %target.size = getelementptr
     %Token,
     %Token* %target,
     i32 0,
-    i32 1  ; size
+    i32 1        ; size
 
   br label %assign
 
@@ -108,6 +108,11 @@ insert:
 
   call void
     @LL.Insert(i8* %pointer)
+
+  br label %advance
+
+advance:
+  %incLen = add nsw i32 1, 
 
   ret void
 }
@@ -220,6 +225,11 @@ define void @read_str(i8* %str) {
 
 define void @Reader.Clean() {
 
+  ;--DEBUG--
+  call void
+    @LL.Inspect()
+  ;--END--
+
   call void
     @Regex.Clean()
 
@@ -246,8 +256,10 @@ declare void @Regex.Clean()
 declare i32  @strlen(i8*)
 
 ;--DEBUG--
-;declare void @Regex.Inspect()
-;declare i32  @putchar(i32)
-;declare i32  @printf(i8*, ...)
-;declare i32  @puts(i8*)
+declare void @LL.Inspect()
+declare void @Regex.Inspect()
+
+declare i32  @putchar(i32)
+declare i32  @puts(i8*)
+declare i32  @printf(i8*, ...)
 ;--END--
