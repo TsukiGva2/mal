@@ -180,7 +180,11 @@ define void @LL.Clean() {
 
   store %LL* %second, %LL** %curr
 
-  br label %iter
+  ; is the second element (the one we start in) null?
+  %shouldNotIter = icmp eq %LL* %second, null
+
+  ; if so, don't try to free it and segfault
+  br i1 %shouldNotIter, label %done, label %iter
 
 iter:
   ; loading current node ( stack allocated LL* )

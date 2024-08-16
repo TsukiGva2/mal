@@ -8,6 +8,12 @@ target triple = "x86_64-pc-linux-gnu"
 
 define i8* @READ(i8* %line) {
   
+  call void
+    @read_str(i8* %line)
+
+  call void
+    @Reader.Clean()
+
   ret i8* %line
 }
 
@@ -38,6 +44,8 @@ define i8* @Rep(i8* %line) {
 define i32 @main() {
 
   ; TODO: Start Reader
+  
+  %stdout = load %FILE*, %FILE** @stdout
 
   br label %loop
 
@@ -65,11 +73,11 @@ ok:
   %result = call i8*
     @Rep(i8* %line)
 
-  call i32
-    @fputs(
-      i8* %result,
-      %FILE* %stdout
-    )
+;  call i32
+;    @fputs(
+;      i8* %result,
+;      %FILE* %stdout
+;    )
 
   br label %loop
 
@@ -89,3 +97,5 @@ declare i32    @fputs(i8*, %FILE*) ; no newline
 declare i8*    @Readline()
 declare void   @Freeline(i8*)
 
+declare void   @read_str(i8*) ; reader.ll
+declare void   @Reader.Clean() ; reader.ll

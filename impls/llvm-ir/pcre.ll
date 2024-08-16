@@ -7,7 +7,7 @@
 @Error.offset = global i32 0
 
 @Pattern      = global %pcre* null
-@Regex.Groups = global [255 x i32] zeroinitializer
+@Regex.Groups = global [10 x i32] zeroinitializer
 
 define void @Regex.Err() noreturn {
   ; Reporting the pcre error
@@ -71,9 +71,9 @@ validate:
 
   %isNullOrError = or i1 %isNull, %hasError
 
-  br i1 %isNullOrError, label %die, label %ok
+  br i1 %isNullOrError, label %err, label %ok
 
-die:
+err:
   ; simply die with a msg
 
   call void
@@ -98,6 +98,8 @@ define void @Regex.CheckReturnCode(i32 %returnCode) {
 err:
   ; die if actual regex error
 
+  store i32 %returnCode, i32* @Error.offset
+
   call void
     @Regex.Err() noreturn
 
@@ -109,14 +111,75 @@ ok:
   ret void
 }
 
-define void @Regex.Match(i8* %str) {
+;--DEBUG--
+;; Lengthy function for debugging
+;@PCRE_DBG_FMT = constant [26 x i8] c"Group: %d, Bounds: %d-%d\0A\00"
+;define void @Regex.Inspect() {
+;  %pf1 = getelementptr
+;    [10 x i32],
+;    [10 x i32]* @Regex.Groups,
+;    i64 0,
+;    i64 0
+;  %pf2 = getelementptr
+;    [10 x i32],
+;    [10 x i32]* @Regex.Groups,
+;    i64 0,
+;    i64 1
+;  %ps1 = getelementptr
+;    [10 x i32],
+;    [10 x i32]* @Regex.Groups,
+;    i64 0,
+;    i64 2
+;  %ps2 = getelementptr
+;    [10 x i32],
+;    [10 x i32]* @Regex.Groups,
+;    i64 0,
+;    i64 3
+
+;  %f1 = load i32, i32* %pf1
+;  %f2 = load i32, i32* %pf2
+;  %s1 = load i32, i32* %ps1
+;  %s2 = load i32, i32* %ps2
+
+;  call i32 (i8*, ...)
+;    @printf(
+;      i8* getelementptr (
+;        [26 x i8],
+;        [26 x i8]* @PCRE_DBG_FMT,
+;        i64 0,
+;        i64 0
+;      ),
+;      i32 1,
+;      i32 %f1,
+;      i32 %f2
+;  )
+;  call i32 (i8*, ...)
+;    @printf(
+;      i8* getelementptr (
+;        [26 x i8],
+;        [26 x i8]* @PCRE_DBG_FMT,
+;        i64 0,
+;        i64 0
+;      ),
+;      i32 2,
+;      i32 %s1,
+;      i32 %s2
+;  )
+
+;  ret void
+;}
+;--END--
+
+; Returns the result of pcre_exec
+; i.e. the number of groups
+define i32 @Regex.Match(i8* %str) {
 
   %length = call i32
     @strlen(i8* %str)
 
   %pattern = load %pcre*, %pcre** @Pattern
 
-  %1 = call i32
+  %result = call i32
     @pcre_exec(
       %pcre* %pattern,
       i8* null,
@@ -126,19 +189,19 @@ define void @Regex.Match(i8* %str) {
       i32 0,
 
       ; Array of substring indexes
-      getelementptr (
-        [255 x i32],
-        [255 x i32]* @Regex.Groups,
+      i32* getelementptr (
+        [10 x i32],
+        [10 x i32]* @Regex.Groups,
         i64 0,
         i64 0
       ),
 
       ; size of the array
-      i32 255,
+      i32 10
   )
 
   ; %1 >= 0?
-  %didMatch = icmp sge i32 %1, 0
+  %didMatch = icmp sge i32 %result, 0
   br i1 %didMatch, label %match, label %err
 
 match:
@@ -146,14 +209,41 @@ match:
 
 err:
   call void
-    @Regex.CheckReturnCode(i32 %1)
+    @Regex.CheckReturnCode(i32 %result)
 
   br label %done
 
 done:
-  ret void
+  ret i32 %result
 }
 
+define i32 @Regex.GetCaptureBegin() {
+
+  ; get start of second group (first '('')' capture)
+  %startPtr = getelementptr
+    [10 x i32],
+    [10 x i32]* @Regex.Groups,
+    i64 0,
+    i64 2   ; start of second group substring
+
+  %start = load i32, i32* %startPtr
+
+  ret i32 %start
+}
+
+define i32 @Regex.GetCaptureEnd() {
+
+  ; get end of second group (first '('')' capture)
+  %endPtr = getelementptr
+    [10 x i32],
+    [10 x i32]* @Regex.Groups,
+    i64 0,
+    i64 3   ; end of second group substring
+
+  %end = load i32, i32* %endPtr
+
+  ret i32 %end
+}
 
 define void @Regex.Clean() {
 
@@ -214,7 +304,8 @@ declare i32    @printf(i8*, ...)
 declare i32    @strlen(i8*)
 
 declare %pcre* @pcre_compile(i8*, i32, i8**, i32*, i8*)
-declare i32    @pcre_exec(%pcre*, i8*, i8*, i32, i32, i32, i8**, i32)
+declare i32    @pcre_exec(%pcre*, i8*, i8*, i32, i32, i32, i32*, i32)
 ;declare void  @pcre_free(%pcre*)
 
 declare void   @Die(i8*) noreturn
+
