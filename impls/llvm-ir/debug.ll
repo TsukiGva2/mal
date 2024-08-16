@@ -106,6 +106,57 @@ done:
   ret void
 }
 
+%Token = type { i8*, i32 }
+@TOKEN_DBG_FMT = constant [25 x i8] c"Lexeme: '%.*s', Len: %d\0A\00"
+
+define void @Token.Inspect() {
+
+  ; skip head
+  call i8*
+    @LL.Next()
+
+  br label %iter
+
+iter:
+  %next = call i8*
+    @LL.Next()
+
+  br label %check
+
+check:
+  %isNull = icmp eq i8* %next, null
+
+  br i1 %isNull, label %done, label %print
+
+print:
+  %token = bitcast i8* %next to %Token*
+
+  %dataOffset = getelementptr %Token, %Token* %token, i32 0, i32 0
+  %data = load i8*, i8** %dataOffset
+
+  %sizeOffset = getelementptr %Token, %Token* %token, i32 0, i32 1
+  %size = load i32, i32* %sizeOffset
+
+  call i32 (i8*, ...)
+    @printf(
+      i8* getelementptr (
+        [25 x i8],
+        [25 x i8]* @TOKEN_DBG_FMT,
+        i64 0,
+        i64 0
+      ),
+      i32 %size,
+      i8* %data,
+      i32 %size
+  )
+
+  br label %iter
+
+done:
+  ret void
+}
+
+declare i8*  @LL.Next()
 declare i8*  @LL.GetData(%LL*)
 declare %LL* @LL.GetNext(%LL*)
 

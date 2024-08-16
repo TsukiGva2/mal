@@ -112,7 +112,8 @@ insert:
   br label %advance
 
 advance:
-  %incLen = add nsw i32 1, 
+  %incLen = add nsw i8 1, %len
+  store i8 %incLen, i8* @Length
 
   ret void
 }
@@ -227,8 +228,14 @@ define void @Reader.Clean() {
 
   ;--DEBUG--
   call void
+    @Token.Inspect()
+
+  call void
     @LL.Inspect()
   ;--END--
+
+  ; resetting tokens
+  store i8 0, i8* @Length
 
   call void
     @Regex.Clean()
@@ -258,8 +265,5 @@ declare i32  @strlen(i8*)
 ;--DEBUG--
 declare void @LL.Inspect()
 declare void @Regex.Inspect()
-
-declare i32  @putchar(i32)
-declare i32  @puts(i8*)
-declare i32  @printf(i8*, ...)
+declare void @Token.Inspect()
 ;--END--
