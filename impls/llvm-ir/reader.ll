@@ -154,8 +154,8 @@ getBounds:
   %len = load i32, i32* %substringLen
 
   ;--DEBUG--
-  ;call void
-  ; @Regex.Inspect()
+  call void
+    @Regex.Inspect()
   ;--END--
 
   ; end >= len
@@ -177,7 +177,7 @@ insert:
 nextMatch:
   %next = getelementptr
     i8,
-    i8* %cut,
+    i8* %s,
     i32 %end
 
   store i8* %next, i8** %substring
