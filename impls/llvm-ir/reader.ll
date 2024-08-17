@@ -7,6 +7,9 @@
   i32  ; size
 }
 
+; linked list type
+%LL = type opaque
+
 ; stack allocate tokens
 ; if it's not optimal, i'll think about
 ; a Malloced impl.
@@ -218,9 +221,68 @@ define void @read_str(i8* %str) {
   call void
     @Reader.tokenize(i8* %str)
 
-; call void
-;   @Reader.read_form()
+  ret void
+}
 
+define i1 @Token.Cmp(i8* %str) {
+
+  %p = call i8*
+    @LL.Peek()
+
+  %isNull = icmp eq i8* %p, null
+  br i1 %isNull, label %err, label %compare
+
+err:
+  call void
+    @UnexpectedEOF() noreturn
+
+  unreachable
+
+compare:
+  %tokenPtr = bitcast i8* %p to %Token*
+
+  %dataPtr = getelementptr %Token, %Token* %tokenPtr, i32 0, i32 0
+  %sizePtr = getelementptr %Token, %Token* %tokenPtr, i32 0, i32 1
+
+  %data = load i8*, i8** %dataPtr
+  %size = load i32, i32* %sizePtr
+
+  %cmp = call i32
+    @strncmp(i8* %data, i8* %str, i32 %size)
+
+  %result = icmp eq i32 %cmp, 0
+
+  ret i1 %result
+}
+
+%Mal.Type = type {
+  i8*,       ; data ( any* )
+  i1         ; type ( scalar/compound )
+}
+
+@MAL_LPAREN = constant [2 x i8] c"(\00"
+@MAL_RPAREN = constant [2 x i8] c")\00"
+define void @read_form() {
+
+  ; skip head ( null )
+  call i8*
+    @LL.Next()
+
+  %isLParen = call i1
+    @Token.Cmp(
+      i8* getelementptr (
+        [2 x i8],
+        [2 x i8]* @MAL_LPAREN,
+        i64 0,
+        i64 0
+      )
+  )
+
+  br i1 %isLParen, label %parseList, label %parseAtom
+
+parseList:
+  ret void
+parseAtom:
   ret void
 }
 
@@ -246,24 +308,33 @@ define void @Reader.Clean() {
   ret void
 }
 
-declare void @Die(i8*) noreturn
+; libc
+declare i32       @strlen(i8*)
+declare i32       @strncmp(i8*, i8*, i32)
 
-declare void @LL.Init()
-declare i8*  @LL.Next()
-declare i8*  @LL.Peek()
-declare void @LL.Insert(i8*)
-declare void @LL.Clean()
+; error.ll
+declare void      @Die(i8*)        noreturn
+declare void      @UnexpectedEOF() noreturn
 
-declare void @Regex.Init(i8*)
-declare i32  @Regex.Match(i8*)
-declare i32  @Regex.GetCaptureBegin()
-declare i32  @Regex.GetCaptureEnd()
-declare void @Regex.Clean()
+; types.ll
 
-declare i32  @strlen(i8*)
+; linkedlist.ll
+declare void      @LL.Init()
+declare i8*       @LL.Next()
+declare i8*       @LL.Peek()
+declare void      @LL.Insert(i8*)
+declare %LL*      @LL.Detach()
+declare void      @LL.Attach(%LL*)
+declare void      @LL.Clean()
 
-;--DEBUG--
-declare void @LL.Inspect()
-declare void @Regex.Inspect()
-declare void @Token.Inspect()
-;--END--
+; pcre.ll
+declare void      @Regex.Init(i8*)
+declare i32       @Regex.Match(i8*)
+declare i32       @Regex.GetCaptureBegin()
+declare i32       @Regex.GetCaptureEnd()
+declare void      @Regex.Clean()
+
+; debug.ll
+declare void      @LL.Inspect()
+declare void      @Regex.Inspect()
+declare void      @Token.Inspect()
