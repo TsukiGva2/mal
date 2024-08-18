@@ -255,14 +255,40 @@ compare:
   ret i1 %result
 }
 
-%Mal.Type = type {
-  i8*,       ; data ( any* )
-  i1         ; type ( scalar/compound )
-}
+
 
 @MAL_LPAREN = constant [2 x i8] c"(\00"
 @MAL_RPAREN = constant [2 x i8] c")\00"
-define void @read_form() {
+
+define %Mal.Type @read_list() {
+
+  br label %check
+
+check:
+  %isRParen = call i1
+    @Token.Cmp(
+      i8* getelementptr (
+        [2 x i8],
+        [2 x i8]* @MAL_RPAREN,
+        i64 0,
+        i64 0
+      )
+  )
+
+  br i1 %isRParen, label %done, label %loop
+
+loop:
+  br label %done
+
+done:
+  ret %Mal.Type null
+}
+
+define %Mal.Type @read_atom() {
+  ret %Mal.Type null
+}
+
+define %Mal.Type @read_form() {
 
   ; skip head ( null )
   call i8*
@@ -281,10 +307,19 @@ define void @read_form() {
   br i1 %isLParen, label %parseList, label %parseAtom
 
 parseList:
-  ret void
+  %list = call %Mal.Type
+    @read_list()
+
+  ret %Mal.Type %list
+
 parseAtom:
-  ret void
+  %atom = call %Mal.Type
+    @read_atom()
+
+  ret %Mal.Type %atom
 }
+
+
 
 define void @Reader.Clean() {
 

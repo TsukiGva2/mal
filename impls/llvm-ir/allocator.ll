@@ -5,6 +5,12 @@
   %LL*
 }
 
+%Mal.Data = type { i64 }
+%Mal.Type = type {
+  %Mal.Data,
+  i8
+}
+
 define void @IsValidPtr(i8* %ptr) {
 
   %isNull = icmp eq i8* %ptr, null
@@ -41,6 +47,26 @@ define %LL* @AllocNode() {
 define void @FreeNode(%LL* %Node) {
 
   %1 = bitcast %LL* %Node to i8*
+
+  call void
+    @FreeI8(i8* %1)
+
+  ret void
+}
+
+define %Mal.Type @AllocMal() {
+
+  %alloc = call noalias i8*
+    @malloc(i64 16) ; i64 and i8 (aligned)
+
+  %ptr = bitcast i8* %alloc to %Mal.Type*
+
+  ret %Mal.Type* %ptr
+}
+
+define void @FreeMal(%Mal.Type* %ptr) {
+
+  %1 = bitcast %Mal.Type* %ptr to i8*
 
   call void
     @FreeI8(i8* %1)
